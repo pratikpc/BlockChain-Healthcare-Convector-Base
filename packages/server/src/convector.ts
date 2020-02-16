@@ -4,8 +4,8 @@ import * as fs from 'fs';
 import { FabricControllerAdapter } from '@worldsibu/convector-adapter-fabric';
 import { ClientFactory } from '@worldsibu/convector-core';
 
-import { ParticipantController } from 'participant-cc';
-import { PersonController } from 'person-cc';
+import { UserController } from 'user-cc';
+import { FileController } from 'file-cc';
 
 const adapter = new FabricControllerAdapter({
     txTimeout: 300000,
@@ -18,19 +18,17 @@ const adapter = new FabricControllerAdapter({
 });
 
 const initAdapter = adapter.init();
-export const ParticipantControllerBackEnd = ClientFactory(ParticipantController, adapter);
-export const PersonControllerBackEnd = ClientFactory(PersonController, adapter);
-
+export const UserControllerBackEnd = ClientFactory(UserController, adapter);
+export const FileControllerBackEnd = ClientFactory(FileController, adapter);
 
 const contextPath = join(keyStore + '/' + identityName);
-fs.readFile(contextPath, 'utf8', async function (err) {
+fs.readFile(contextPath, 'utf8', (err) => {
     if (err) {
         throw new Error(`Context in ${contextPath} doesn't exist. Make sure that path resolves to your key stores folder`);
     } else {
         console.log('Context path with cryptographic materials exists');
     }
 });
-
 
 //#region Optional
 

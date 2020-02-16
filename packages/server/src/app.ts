@@ -2,7 +2,7 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import { port } from './env';
-import { ParticipantExpressController, PersonExpressController } from './controllers';
+import { FileExpressController, UserExpressController } from './controllers';
 import { InitServerIdentity } from './convector';
 
 
@@ -15,8 +15,12 @@ async function AppSetup() {
   }));
   app.use(bodyParser.json({ limit: '40mb' }));
 
-  app.use('/participant', ParticipantExpressController);
-  app.use('/person', PersonExpressController);
+  app.use('/file', FileExpressController);
+  app.use('/user', UserExpressController);
+
+  app.use("/", (req, res) => {
+    return res.send("Please GO to /file and /user");
+  });
 
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
