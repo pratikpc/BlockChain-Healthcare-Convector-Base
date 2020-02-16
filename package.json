@@ -8,6 +8,7 @@
   "scripts": {
     "install": "npm-run-all -s lerna:install",
     "env:restart": "hurl new",
+    "server:start": "npx lerna run start --scope server --stream",
     "test": "npm-run-all -s lerna:test",
     "test:e2e": "npm-run-all -s lerna:test:e2e",
     "env:clean": "hurl clean",
