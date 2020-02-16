@@ -1,0 +1,22 @@
+{
+  "user": "admin",
+  "txTimeout": 300000,
+  "skipInit": true,
+  "channel": "ch1",
+  "keyStore": "~/hyperledger-fabric-network/.hfc-org1",
+  "//**INSIDE-DOCKER**//keyStore": "/config/.hfc-org1",
+  "networkProfile": "~/hyperledger-fabric-network/network-profiles/org1.network-profile.yaml",
+  "//**INSIDE-DOCKER**//networkProfile": "/config/network-profiles/org1.network-profile.inside-docker.yaml",
+  "controllers": [
+    {
+      "name": "file-cc",
+      "version": "file:./packages/file-cc",
+      "controller": "FileController"
+    },
+    {
+      "name": "user-cc",
+      "version": "file:./packages/user-cc",
+      "controller": "UserController"
+    }
+  ]
+}
