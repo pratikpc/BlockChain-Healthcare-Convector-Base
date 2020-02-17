@@ -16,7 +16,6 @@ const adapter = new FabricControllerAdapter({
     networkProfile: resolve(__dirname, networkProfile)
     // userMspPath: keyStore
 });
-
 const initAdapter = adapter.init();
 export const UserControllerBackEnd = ClientFactory(UserController, adapter);
 export const FileControllerBackEnd = ClientFactory(FileController, adapter);
@@ -37,6 +36,7 @@ fs.readFile(contextPath, 'utf8', (err) => {
  */
 export async function InitServerIdentity() {
     await initAdapter;
+    // console.log(adapter.config.networkProfile.valueOf()["organisation"]);
 }
 
 //#endregion

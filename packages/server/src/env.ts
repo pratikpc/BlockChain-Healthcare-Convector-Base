@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-dotenv.config();
+import { join } from 'path';
 
 const homedir = require('os').homedir();
 
@@ -22,3 +22,6 @@ export const couchDBView = process.env.COUCHDBVIEW || 'ch1_file';
 export const couchDBProtocol = process.env.COUCHDB_PROTOCOL || 'http';
 export const couchDBHost = process.env.COUCHDB_HOST || 'localhost';
 export const couchDBPort = process.env.COUCHDB_PORT || 5084;
+
+// Values for App
+export const UploadDirectory = join(__dirname, '/../uploads');

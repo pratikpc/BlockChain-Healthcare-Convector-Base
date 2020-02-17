@@ -175,6 +175,15 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     id: string) {
     return await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
   }
+  @Invokable()
+  public async GetDownloadLink(
+    @Param(yup.string())
+    id: string) {
+    const file_priv = (await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage }));
+
+    return {IPFS: file_priv.IPFS, extension: file_priv.extension};
+  }
+
 
   @Invokable()
   public async GetAll() {
