@@ -10,18 +10,6 @@ import { User } from './user.model';
 
 @Controller('user')
 export class UserController extends ConvectorController<ChaincodeTx> {
-
-  @Invokable()
-  public async Create(
-    @Param(User.schema())
-    user: User
-  ) {
-    if (user == null)
-      return null;
-    await user.save();
-    return user;
-  }
-
   @Invokable()
   public async Generate(
     @Param(yup.string())
@@ -35,29 +23,29 @@ export class UserController extends ConvectorController<ChaincodeTx> {
   ) {
     const user = new User({
       id: id,
-      name: name,
+      Name: name,
       PublicKey: publicKey,
-      created: this.tx.stub.getTxDate(),
-      typeUser: typeUser
+      Created: this.tx.stub.getTxDate(),
+      TypeUser: typeUser
     });
     await user.save();
     return user;
   }
 
   @Invokable()
-  public async Initial(){
+  public async Initial() {
     const user = new User({
       id: this.tx.stub.generateUUID("GENESIS"),
-      name: "NAME-USER",
+      Name: "NAME-USER",
       PublicKey: "SECRET-KEY",
-      created: this.tx.stub.getTxDate(),
-      typeUser: "PATIENT"
+      Created: this.tx.stub.getTxDate(),
+      TypeUser: "GENESIS"
     });
     // this.tx.identity.
     await user.save();
     return user;
   }
-  
+
   @Invokable()
   public async Get(
     @Param(yup.string())
@@ -70,7 +58,19 @@ export class UserController extends ConvectorController<ChaincodeTx> {
   }
 
   @Invokable()
-  public async GetAll( ) {
+  public async GetTypeOfUser(
+    @Param(yup.string())
+    id: string
+  ) {
+    let user = await User.getOne(id);
+    if (user == null || user.id == null)
+      return "";
+    return user.TypeUser;
+  }
+
+
+  @Invokable()
+  public async GetAll() {
     return await User.getAll();
   }
 }

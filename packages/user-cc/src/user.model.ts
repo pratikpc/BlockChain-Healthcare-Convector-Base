@@ -11,22 +11,25 @@ export class User extends ConvectorModel<User> {
   @Required()
   public readonly type = 'io.worldsibu.user';
 
+  @ReadOnly()
   @Required()
   @Validate(yup.string())
-  public name: string;
+  public Name!: string;
 
   @ReadOnly()
   @Required()
   @Validate(yup.date())
-  public created: Date;
+  public Created!: Date;
 
   @ReadOnly()
   @Required()
   @Validate(yup.string())
-  public PublicKey: string;
+  public PublicKey!: string;
 
   @ReadOnly()
+  @Required()
   @Validate(yup.string())
-  // One of Doctor, Patient or Clinician
-  public typeUser: string;
+  // Set what Type of User this is
+  // Perform Validation and Type Setting on User End
+  public TypeUser!: string;
 }
