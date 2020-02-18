@@ -3,8 +3,37 @@ import {
   ConvectorModel,
   ReadOnly,
   Required,
-  Validate
+  Validate,
+  FlatConvectorModel
 } from '@worldsibu/convector-core-model';
+
+// Attach Description of File to Comments
+export class FileComments extends ConvectorModel<FileComments> {
+  @ReadOnly()
+  @Required()
+  public readonly type = 'io.worldsibu.filedescription';
+
+  @ReadOnly()
+  @Required()
+  @Validate(yup.date())
+  public DateAdded!: Date;
+
+  @ReadOnly()
+  @Required()
+  @Validate(yup.string())
+  public Comments!: string;
+
+  @ReadOnly()
+  @Required()
+  @Validate(yup.string())
+  public Description!: string;
+
+  @ReadOnly()
+  @Required()
+  @Validate(yup.string())
+  // Foreign Key Linkage
+  public CreatorId!: string;
+}
 
 export class FilePrivateDetails extends ConvectorModel<FilePrivateDetails>{
   @ReadOnly()
@@ -13,17 +42,23 @@ export class FilePrivateDetails extends ConvectorModel<FilePrivateDetails>{
 
   @Required()
   @Validate(yup.string())
-  public Hash: string;
+  public Hash!: string;
 
   @ReadOnly()
   @Required()
   @Validate(yup.string())
-  public IPFS: string;
+  public IPFS!: string;
 
   @ReadOnly()
   @Required()
   @Validate(yup.string())
-  public extension: string;
+  public extension!: string;
+
+  // Store the File Description on Convector
+  // Remember that This List can only be appended to
+  // It cannot be unappended from
+  @Validate(yup.array(FileComments.schema()))
+  public Comments!: Array<FlatConvectorModel<FileComments>>;
 }
 
 export class File extends ConvectorModel<File> {
@@ -34,21 +69,21 @@ export class File extends ConvectorModel<File> {
   @Required()
   @Validate(yup.array(yup.string()))
   // Foreign Key Linkages
-  public Clinician: Array<String>;
+  public Uploader!: Array<String>;
 
   @Required()
   @Validate(yup.array(yup.string()))
   // Foreign Key Linkages
-  public Doctor: Array<String>;
+  public Viewer!: Array<String>;
 
   @Required()
   @Validate(yup.array(yup.string()))
   // Foreign Key Linkages
-  public Patient: Array<String>;
+  public Recipient!: Array<String>;
 
   @ReadOnly()
   @Required()
   @Validate(yup.date())
-  public created: Date;
+  public created!: Date;
 
 }

@@ -1,5 +1,16 @@
-<form action="/file/upload" method="post" enctype="multipart/form-data">
-    Select image to upload:
-    <input type="file" name="file" id="file">
-    <input type="submit" value="Upload Image" name="submit">
-</form>
+<div>
+    <form action="/file/upload" method="post" enctype="multipart/form-data">
+        Select image to upload:
+        <input type="file" name="file" id="file">
+        <input type="submit" value="Upload Image" name="submit">
+    </form>
+</div>
+<div>
+    <form action="/file/comment" method="post">
+        Select Comment to Post:
+        <input type="text" name="id" placeholder="id" id="id">
+        <input type="text" name="comment" placeholder="comment" id="comment">
+        <input type="text" name="description" placeholder="description" id="description">
+        <input type="submit" value="Submit Comment" name="submit">
+    </form>
+</div>

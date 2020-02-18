@@ -1,37 +1,59 @@
 import * as express from 'express';
 import { FileControllerBackEnd } from '../convector';
-import { MulterStorage, GetSHA256FromFile, IPFSAddFile, FileDelete, IPFSStreamFile, bufferToStream } from "../utils"
+import { MulterStorage, File, IPFS, } from "../utils"
 import * as multer from "multer";
 import * as uuid from "uuid";
 import * as path from "path";
 
-const Upload = multer({ storage: MulterStorage });
-
 export const FileExpressController = express.Router();
 
-FileExpressController.get("/upload", (req, res) => {
-    console.log("3334");
+FileExpressController.get("/upload", (req: express.Request, res: express.Response) => {
     return res.render("upload.hbs");
 });
 
+const Upload = multer({ storage: MulterStorage });
 // Upload File
-FileExpressController.post('/upload', Upload.single('file'), async (req, res) => {
+FileExpressController.post('/upload', Upload.single('file'), async (req: express.Request, res: express.Response) => {
     const fileName = req.file.path;
 
     async function AddFileToBlockchain(fileName: string) {
-        const files = await IPFSAddFile(fileName);
+        // In Future, this ID must be Linked with DB
         const id = uuid();
-        const ipfs = String(files[0].hash);
-        const hash = await GetSHA256FromFile(fileName);
+        const ipfs = await IPFS.AddFile(fileName);
+        const hash = await File.GetSHA256(fileName);
         const ext = path.extname(fileName);
-        const patient = ["1"];
-        const clinician = ["1"];
-        const doctor = ["1"];
-        await FileControllerBackEnd.Create(id, ipfs, hash, ext, patient, clinician, doctor);
-        await FileDelete(fileName);
+
+        // TODO:- Shift to Recipient ID
+        const recipient = ["1"];
+        // TODO:- Shift to Current User ID
+        const uploader = ["1"];
+        // TODO:- Shift to Viewer ID
+        const viewer = ["1"];
+
+        await FileControllerBackEnd.Create(id, ipfs, hash, ext, recipient, uploader, viewer);
+        await File.Delete(fileName);
     }
     await AddFileToBlockchain(fileName);
-    return res.redirect("/upload");
+    return res.redirect("/file/upload");
+});
+
+FileExpressController.post('/comment', async (req: express.Request, res: express.Response) => {
+    const params = req.body;
+
+    if (params == null)
+        return res.sendStatus(404);
+
+    const id = String(params.id).trim();
+    const comment = String(params.comment).trim();
+    const description = String(params.description).trim();
+    // TODO:- Shift to Current User ID
+    const creatorId = "1";
+
+    if (id === "" || comment === "" || description === "")
+        return res.sendStatus(404);
+
+    await FileControllerBackEnd.AddDescriptionToFile(id, comment, description, creatorId);
+    return res.redirect("/file/upload");
 });
 
 FileExpressController.get('/', async (req: express.Request, res: express.Response) => {
@@ -39,27 +61,22 @@ FileExpressController.get('/', async (req: express.Request, res: express.Respons
     return res.json(files);
 });
 
-export function Download(res: any, buffer: any) {
-    return new Promise<void>((resolve, reject) => {
-        return bufferToStream(buffer)
-            .pipe(res)
-            .on('error', (error: any) => {
-                res.sendStatus(404);
-                resolve();
-            })
-            .on('finish', function () {
-                resolve()
-            })
-            .on('end', function () {
-                resolve()
-            });
-    });
-}
+FileExpressController.get('/:id/comments', async (req: express.Request, res: express.Response) => {
+    const id = String(req.params.id).trim();
+
+    if (id === "")
+        return res.sendStatus(404);
+
+    const comments = await FileControllerBackEnd.GetComments(id);
+    return res.json(comments);
+});
+
 FileExpressController.get('/:id', async (req: express.Request, res: express.Response) => {
     let { id } = req.params;
     const file = await FileControllerBackEnd.GetDownloadLink(id);
 
     res.contentType(String(file.extension));
-    const buffer = await IPFSStreamFile(String(file.IPFS));
-    await Download(res, buffer);
+    const buffer = await IPFS.GetFile(String(file.IPFS));
+    await IPFS.Download(res, buffer);
 });
+

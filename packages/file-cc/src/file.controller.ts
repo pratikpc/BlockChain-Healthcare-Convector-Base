@@ -7,7 +7,7 @@ import {
 } from "@worldsibu/convector-core";
 
 import * as yup from "yup";
-import { File, FilePrivateDetails } from "./file.model";
+import { File, FilePrivateDetails, FileComments } from "./file.model";
 
 import { User } from "user-cc";
 
@@ -23,25 +23,24 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if ((await File.getAll()).length !== 0)
       throw new Error("Create Genesis only when File Length = 0");
 
-    const file = new File();
-    // Ensures Date of Creation Remains same
-    file.created = this.tx.stub.getTxDate();
-    // Ensures UUID Generated is always same
-    file.id = this.tx.stub.generateUUID("GENESIS");
-
-    file.Patient = [];
-    file.Doctor = [];
-    file.Clinician = [];
+    const id = this.tx.stub.generateUUID("GENESIS");
+    const file = new File({
+      created: this.tx.stub.getTxDate(),
+      id: id,
+      Recipient: [],
+      Viewer: [],
+      Uploader: []
+    });
     await file.save();
 
-    {
-      const file_private = new FilePrivateDetails();
-      file_private.id = file.id;
-      file_private.extension = ".ext";
-      file_private.IPFS = "";
-      file_private.Hash = "";
-      await file_private.save({ privateCollection: this.FilePrivateStorage });
-    }
+    const file_private = new FilePrivateDetails({
+      id: id,
+      extension: ".",
+      Comments: [],
+      Hash: "",
+      IPFS: ""
+    });
+    await file_private.save({ privateCollection: this.FilePrivateStorage });
 
     return file;
   }
@@ -57,18 +56,18 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     @Param(yup.string())
     extension: string,
     @Param(yup.array(yup.string()))
-    patient: Array<String>,
+    recipient: Array<String>,
     @Param(yup.array(yup.string()))
-    clinician: Array<String>,
+    uploader: Array<String>,
     @Param(yup.array(yup.string()))
-    doctor: Array<String>
+    viewer: Array<String>
   ) {
 
-    if (clinician.length === 0 && doctor.length === 0)
-      throw new Error("File Contract. Doctor or Clinician needed to create every file");
+    if (uploader.length === 0 && viewer.length === 0)
+      throw new Error("File Contract. Viewer or Uploader needed to create every file");
 
-    if (patient.length === 0)
-      throw new Error("File Contract. No Patient Assigned");
+    if (recipient.length === 0)
+      throw new Error("File Contract. No Recipient Assigned");
 
     if (ipfs === "" || extension === "" || id === "" || hash === "")
       throw new Error("File Contract. Params must have proper values");
@@ -89,16 +88,17 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     const file = new File({
       id: id,
       created: this.tx.stub.getTxDate(),
-      Patient: patient,
-      Doctor: doctor,
-      Clinician: clinician
+      Recipient: recipient,
+      Viewer: viewer,
+      Uploader: uploader
     });
     await file.save();
     const file_private = new FilePrivateDetails({
       id: id,
       IPFS: ipfs,
       extension: extension,
-      Hash: hash
+      Hash: hash,
+      Comments: []
     });
     await file_private.save({ privateCollection: this.FilePrivateStorage });
 
@@ -106,60 +106,97 @@ export class FileController extends ConvectorController<ChaincodeTx> {
   }
 
   @Invokable()
-  public async AddDoctorToFile(
+  public async AddDescriptionToFile(
     @Param(yup.string())
     id: string,
     @Param(yup.string())
-    doctor: string
+    Comment: string,
+    @Param(yup.string())
+    Description: string,
+    @Param(yup.string())
+    CreatorId: string) {
+
+    const file_private = await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
+
+    // Check if Does not Exist
+    if (file_private == null || file_private.id == null)
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File Private");
+
+    const file = await File.getOne(id, File);
+    // Check if Already Exists
+    if (file == null || file.id == null)
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
+
+    if (file.Uploader.indexOf(CreatorId) === -1 || file.Viewer.indexOf(CreatorId) === -1 || file.Recipient.indexOf(CreatorId) === -1)
+      throw new Error("File Contract. Comments Can Only be Added By Creators");
+
+    const file_description = new FileComments({
+      DateAdded: this.tx.stub.getTxDate(),
+      Comments: Comment,
+      Description: Description,
+      CreatorId: CreatorId
+    });
+
+    file_private.Comments.push(file_description);
+
+    await file_private.save({ privateCollection: this.FilePrivateStorage });
+  }
+
+  @Invokable()
+  public async AddViewerToFile(
+    @Param(yup.string())
+    id: string,
+    @Param(yup.string())
+    viewer: string
   ) {
     const file = await File.getOne(id);
     if (file == null || file.id == null) {
-      return;
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    file.Doctor.push(doctor);
+    file.Viewer.push(viewer);
     await file.save();
   }
   @Invokable()
-  public async AddClinicianToFile(
+  public async AddUploaderToFile(
     @Param(yup.string())
     id: string,
     @Param(yup.string())
-    clinician: string
+    uploader: string
   ) {
     const file = await File.getOne(id);
     if (file == null || file.id == null) {
-      return;
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    file.Clinician.push(clinician);
+    file.Uploader.push(uploader);
     await file.save();
   }
 
   @Invokable()
-  public async RemoveDoctorFromFile(
+  public async RemoveViewerFromFile(
     @Param(yup.string())
     id: string,
     @Param(yup.string())
-    doctor: string
+    viewer: string
   ) {
     const file = await File.getOne(id);
     if (file == null || file.id == null) {
-      return;
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    file.Doctor = file.Doctor.filter(d => d !== doctor);
+    file.Viewer = file.Viewer.filter(d => d !== viewer);
     await file.save();
   }
   @Invokable()
-  public async RemoveClinicianFromFile(
+  public async RemoveUploaderFromFile(
     @Param(yup.string())
     id: string,
     @Param(yup.string())
-    clinician: string
+    uploader: string
   ) {
     const file = await File.getOne(id);
     if (file == null || file.id == null) {
-      return;
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    file.Clinician = file.Clinician.filter(c => c !== clinician);
+    file.Uploader = file.Uploader.filter(c => c !== uploader);
     await file.save();
   }
 
@@ -180,8 +217,21 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     @Param(yup.string())
     id: string) {
     const file_priv = (await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage }));
+    if (file_priv == null || file_priv.id == null)
+      throw new Error("File Contract File Not Found");
+    return { IPFS: file_priv.IPFS, extension: file_priv.extension };
+  }
 
-    return {IPFS: file_priv.IPFS, extension: file_priv.extension};
+  @Invokable()
+  public async GetComments(
+    @Param(yup.string())
+    id: string) {
+    const file_priv = await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
+    if (file_priv == null || file_priv.id == null)
+      throw new Error("File Contract File Not Found");
+    const comments_model = file_priv.Comments;
+    const comments = comments_model.map((comment_model => comment_model as FileComments));
+    return comments;
   }
 
 
@@ -191,17 +241,24 @@ export class FileController extends ConvectorController<ChaincodeTx> {
   }
 
   @Invokable()
-  public async GetAllForPatient
+  public async GetAllForRecipient
     (@Param(yup.string())
     id: string) {
-    return await File.query(File, {
+    const files = await File.query(File, {
       selector: {
-        Patient: {
+        Recipient: {
           $elemMatch: id
         }
       }
     });
+    return this.ToArray(files);
+  }
 
+  private ToArray<T>(element: T | Array<T>) {
+    if (element instanceof Array)
+      return element;
+    else
+      return [element];
   }
 
   @Invokable()
@@ -209,26 +266,27 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     @Param(yup.string())
     id: string
   ) {
-    return await File.query(File, {
+    const query_result = await File.query(File, {
       selector: {
         $or: [
           {
-            Patient: {
+            Recipient: {
               $elemMatch: id
             }
           },
           {
-            Doctor: {
+            Viewer: {
               $elemMatch: id
             }
           },
           {
-            Clinician: {
+            Uploader: {
               $elemMatch: id
             }
           }
         ]
       }
     });
+    return this.ToArray(query_result);
   }
 }
