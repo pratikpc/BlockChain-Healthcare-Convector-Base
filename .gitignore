@@ -2,3 +2,4 @@ node_modules/
 chaincode-*/
 dist/
 *lerna*
+packages/server/uploads/
