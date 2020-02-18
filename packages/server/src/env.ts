@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 const homedir = require('os').homedir();
 
@@ -11,10 +11,10 @@ export const identityId = process.env.IDENTITYID || 'admin';
 export const identityName = process.env.IDENTITY || 'admin';
 export const identityOrg = process.env.ORG || 'org1';
 
-export const keyStore = process.env.KEYSTORE || `/${homedir}/hyperledger-fabric-network/.hfc-${identityOrg}`;
-export const networkProfile = process.env.NETWORKPROFILE || `/${homedir}/hyperledger-fabric-network/network-profiles/${identityOrg}.network-profile.yaml`;
+export const keyStore = process.env.KEYSTORE || resolve(__dirname, `/${homedir}/hyperledger-fabric-network/.hfc-${identityOrg}`);
+export const networkProfile = process.env.NETWORKPROFILE || resolve(__dirname, `/${homedir}/hyperledger-fabric-network/network-profiles/${identityOrg}.network-profile.yaml`);
 
-export const port = process.env.PORT || 8000;
+export const port = Number(process.env.PORT) || 8000;
 
 // Default to common values
 export const couchDBView = process.env.COUCHDBVIEW || 'ch1_file';

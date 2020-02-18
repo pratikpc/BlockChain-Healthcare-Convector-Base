@@ -7,7 +7,7 @@
   "main": "./dist/src/app.js",
   "private": true,
   "scripts": {
-    "start": "npm run build && nodemon ./dist/app.js",
+    "start": "npm run build && node ./dist/app.js",
     "tsc": "tsc",
     "clean": "rimraf dist client",
     "build": "npm run clean && tsc" 

@@ -8,7 +8,7 @@ import {
 } from '@worldsibu/convector-core-model';
 
 // Attach Description of File to Comments
-export class FileComments extends ConvectorModel<FileComments> {
+export class FileComment extends ConvectorModel<FileComment> {
   @ReadOnly()
   @Required()
   public readonly type = 'io.worldsibu.filedescription';
@@ -21,7 +21,7 @@ export class FileComments extends ConvectorModel<FileComments> {
   @ReadOnly()
   @Required()
   @Validate(yup.string())
-  public Comments!: string;
+  public Comment!: string;
 
   @ReadOnly()
   @Required()
@@ -57,8 +57,8 @@ export class FilePrivateDetails extends ConvectorModel<FilePrivateDetails>{
   // Store the File Description on Convector
   // Remember that This List can only be appended to
   // It cannot be unappended from
-  @Validate(yup.array(FileComments.schema()))
-  public Comments!: Array<FlatConvectorModel<FileComments>>;
+  @Validate(yup.array(FileComment.schema()))
+  public Comments!: Array<FlatConvectorModel<FileComment>>;
 }
 
 export class File extends ConvectorModel<File> {
@@ -85,5 +85,4 @@ export class File extends ConvectorModel<File> {
   @Required()
   @Validate(yup.date())
   public created!: Date;
-
 }

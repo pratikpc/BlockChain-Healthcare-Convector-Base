@@ -52,7 +52,7 @@ FileExpressController.post('/comment', async (req: express.Request, res: express
     if (id === "" || comment === "" || description === "")
         return res.sendStatus(404);
 
-    await FileControllerBackEnd.AddDescriptionToFile(id, comment, description, creatorId);
+    await FileControllerBackEnd.AddDescriptionToFile(id, comment, description);
     return res.redirect("/file/upload");
 });
 
@@ -73,10 +73,15 @@ FileExpressController.get('/:id/comments', async (req: express.Request, res: exp
 
 FileExpressController.get('/:id', async (req: express.Request, res: express.Response) => {
     let { id } = req.params;
-    const file = await FileControllerBackEnd.GetDownloadLink(id);
+    try {
+        const file = await FileControllerBackEnd.GetDownloadLink(id);
 
-    res.contentType(String(file.extension));
-    const buffer = await IPFS.GetFile(String(file.IPFS));
-    await IPFS.Download(res, buffer);
+        res.contentType(String(file.extension));
+        const buffer = await IPFS.GetFile(String(file.IPFS));
+        await IPFS.Download(res, buffer);
+    } catch(err){
+        console.error(err);
+        return res.sendStatus(404);
+    }
 });
 

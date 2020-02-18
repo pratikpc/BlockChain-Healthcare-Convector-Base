@@ -24,11 +24,6 @@ export class User extends ConvectorModel<User> {
   @ReadOnly()
   @Required()
   @Validate(yup.string())
-  public PublicKey!: string;
-
-  @ReadOnly()
-  @Required()
-  @Validate(yup.string())
   // Set what Type of User this is
   // Perform Validation and Type Setting on User End
   public TypeUser!: string;

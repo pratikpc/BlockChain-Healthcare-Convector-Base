@@ -1,5 +1,5 @@
 import { join, resolve } from "path";
-import { keyStore, identityName, channel, chaincode, networkProfile } from './env';
+import { keyStore, identityName, channel, chaincode, networkProfile, identityOrg } from './env';
 import * as fs from 'fs';
 import { FabricControllerAdapter } from '@worldsibu/convector-adapter-fabric';
 import { ClientFactory } from '@worldsibu/convector-core';
@@ -7,18 +7,18 @@ import { ClientFactory } from '@worldsibu/convector-core';
 import { UserController } from 'user-cc';
 import { FileController } from 'file-cc';
 
-const adapter = new FabricControllerAdapter({
+export const FabricAdapter = new FabricControllerAdapter({
     txTimeout: 300000,
     user: identityName,
-    channel,
-    chaincode,
-    keyStore: resolve(__dirname, keyStore),
-    networkProfile: resolve(__dirname, networkProfile)
-    // userMspPath: keyStore
+    channel: channel,
+    chaincode: chaincode,
+    keyStore: keyStore,
+    networkProfile: networkProfile
 });
-const initAdapter = adapter.init();
-export const UserControllerBackEnd = ClientFactory(UserController, adapter);
-export const FileControllerBackEnd = ClientFactory(FileController, adapter);
+
+const init = FabricAdapter.init();
+export let UserControllerBackEnd = ClientFactory(UserController, FabricAdapter);
+export let FileControllerBackEnd = ClientFactory(FileController, FabricAdapter);
 
 const contextPath = join(keyStore + '/' + identityName);
 fs.readFile(contextPath, 'utf8', (err) => {
@@ -35,8 +35,12 @@ fs.readFile(contextPath, 'utf8', (err) => {
  * Check if the identity has been initialized in the chaincode.
  */
 export async function InitServerIdentity() {
-    await initAdapter;
-    // console.log(adapter.config.networkProfile.valueOf()["organisation"]);
+    await init;
+    const user: string = "user1";
+    await FabricAdapter.useUser(user);
+    console.log(FabricAdapter.organizations, FabricAdapter.config);
+    UserControllerBackEnd = UserControllerBackEnd.$withUser("admin");
+    FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
 }
 
 //#endregion
