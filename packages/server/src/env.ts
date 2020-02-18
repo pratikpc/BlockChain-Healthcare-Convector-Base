@@ -1,4 +1,3 @@
-import * as dotenv from 'dotenv';
 import { join } from 'path';
 
 const homedir = require('os').homedir();

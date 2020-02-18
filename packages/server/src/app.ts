@@ -8,12 +8,11 @@ import * as cors from "cors";
 import * as cookieParser from "cookie-parser";
 import * as path from "path";
 import * as expressHandlebars from "express-handlebars";
-import { DirectoryCreate } from './utils';
+import { File } from './utils';
 
 async function AppSetup() {
 
-  console.log(UploadDirectory);
-  DirectoryCreate(UploadDirectory);
+  File.DirectoryCreate(UploadDirectory);
 
   const app = express();
 
