@@ -1,13 +1,11 @@
 // tslint:disable:no-unused-expression
 import { join } from 'path';
 import { expect } from 'chai';
-import * as uuid from 'uuid/v4';
 import { MockControllerAdapter } from '@worldsibu/convector-adapter-mock';
 import { ClientFactory, ConvectorControllerClient } from '@worldsibu/convector-core';
 import 'mocha';
 
 import { File, FileController } from '../src';
-import { User } from 'user-cc';
 
 describe("File", () => {
   let adapter: MockControllerAdapter;
@@ -30,72 +28,56 @@ describe("File", () => {
   });
 
   it("should create a default FileController model", async () => {
-    const modelSample = new File({
+    const modelSample = {
       id: "213",
-      Hash: "",
-      Doctor: [],
-      Clinician: [],
-      Patient: [],
+      Hash: "4",
+      Viewer: ["4"],
+      Recipient: ["4"],
+      Uploader: ["4"],
       extension: "ext",
-      IPFS: "",
-      created: new Date()
-    });
+      IPFS: "555",
+      // created: new Date()
+    };
 
-    await FileCtrl.$withUser("Test").create(modelSample);
+    const file = await FileCtrl.$withUser("Test").Create(modelSample.id, modelSample.IPFS, modelSample.Hash, modelSample.extension, modelSample.Recipient, modelSample.Uploader, modelSample.Viewer);
 
     const justSavedModel = await adapter.getById<File>(modelSample.id);
 
     expect(justSavedModel.id).to.exist;
   });
-  it("Perform Debug Check", async () => {
-    const modelSample = await FileCtrl.$withUser("Test").File(
-      "abcd",
-      null,
-      "this is the data to be added to a database",
-      ".txt",
-      [],
-      [],
-      []
-    );
-    const modelT = modelSample as any;
-    const justSavedModel = await adapter.getById<File>(modelT._id);
-    expect(justSavedModel.id).to.exist;
-  });
   it("Check if After Multiple Inserts, we can get the Data we want", async () => {
-    const user1 = new User();
-    user1.id = "1";
-    const user2 = new User();
-    user2.id = "2";
-    await FileCtrl.$withUser("Test").File(
+    const user1 = "1";
+    const user2 = "2";
+    const user3 = "3";
+    await FileCtrl.$withUser("Test").Create(
       "1abcd",
-      null,
+      "null",
       "1this is the data to be added to a database",
       ".txt",
       [user1, user2],
       [],
-      []
+      [user3]
     );
-    await FileCtrl.$withUser("Test").File(
+    await FileCtrl.$withUser("Test").Create(
       "2abcd",
-      null,
+      "null",
       "this is the data to be added to a database",
       ".txt",
       [user2],
       [user1],
       []
     );
-    await FileCtrl.$withUser("Test").File(
+    await FileCtrl.$withUser("Test").Create(
       "3abcd",
-      null,
+      "null",
       "this is the data to be added to a database",
       ".txt",
       [user1],
-      [],
+      [user3],
       []
     );
-    await FileCtrl.$withUser("Test").RemoveClinicianFromFile("2abcd", user1);
-    const output = await FileCtrl.GetByIdFromUser("1") as File[];
-    console.log("Output of Query ", output);
+    await FileCtrl.$withUser("Test").RemoveUploaderFromFile("2abcd", user1);
+    const output = await FileCtrl.GetFilesByIdFromUser(user1);
     expect(output.length === 2).to.be.true;
   });
 });

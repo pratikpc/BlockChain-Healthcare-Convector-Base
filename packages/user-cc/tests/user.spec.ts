@@ -28,25 +28,8 @@ describe("User", () => {
     adapter.addUser("Test");
 
   });
-
-  it("should create a default model", async () => {
-    const modelSample = new User({
-      id: uuid(),
-      name: "Test",
-      created: new Date(),
-      typeUser: "doctor",
-      // TODO: Randomise
-      PublicKey: "34333533453",
-    });
-
-    await UserCtrl.$withUser("Test").create(modelSample);
-
-    const justSavedModel = await adapter.getById<User>(modelSample.id);
-
-    expect(justSavedModel.id).to.exist;
-  });
   it("should create a model with the given name", async () => {
-    const modelSample = await UserCtrl.$withUser("Test").generate(
+    const modelSample = await UserCtrl.$withUser("Test").Generate(
       "333",
       "it's incredible",
       "SECRET-KEY",
