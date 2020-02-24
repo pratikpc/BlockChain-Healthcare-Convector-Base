@@ -1,8 +1,10 @@
-# bTest - file
+# BlockChain Healthcare Convector Base
 
-This awesome project was created automatically with <a href="https://github.com/worldsibu/convector-cli" target="_blank">Convector CLI</a>.
-By default new Convector projects locally include <a href="https://github.com/worldsibu/hurley">Hurley</a> to manage your development environment seamlessly, so you don't have to worry about setting up the network and hard ways to install  and upgrade your chaincodes.
+## Install
 
+Follow the installation steps given at https://docs.covalentx.com/article/120-install-on-ubuntu
+
+This awesome project was created automatically with <a href="https://github.com/worldsibu/convector-cli" tar
 ## Start
 
 ```
@@ -14,7 +16,10 @@ npm run env:restart
 npm run cc:start -- file
 # Make a testing call to create a record in the ledger
 # Beware that the first call may fail with a timeout! Just happens the first time
-hurl invoke file file_create "{\"name\":\"my first request\",\"id\":\"0001\",\"created\":0,\"modified\":0}"
+npm run server:start
+
+# Upgrade your existing chaincode - From the root of your project
+npm run cc:upgrade -- file VERSION
 ```
 
 ## About Hurley
