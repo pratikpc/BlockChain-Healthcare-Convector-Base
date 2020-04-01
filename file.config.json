@@ -14,8 +14,8 @@
       "controller": "FileController"
     },
     {
-      "name": "user-cc",
-      "version": "file:./packages/user-cc",
+      "name": "file-cc",
+      "version": "file:./packages/file-cc",
       "controller": "UserController"
     }
   ]

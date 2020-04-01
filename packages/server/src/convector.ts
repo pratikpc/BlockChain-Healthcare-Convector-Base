@@ -4,8 +4,7 @@ import * as fs from 'fs';
 import { FabricControllerAdapter } from '@worldsibu/convector-adapter-fabric';
 import { ClientFactory } from '@worldsibu/convector-core';
 
-import { UserController } from 'user-cc';
-import { FileController } from 'file-cc';
+import { UserController, FileController } from 'file-cc';
 
 export const FabricAdapter = new FabricControllerAdapter({
     txTimeout: 300000,
@@ -34,13 +33,20 @@ fs.readFile(contextPath, 'utf8', (err) => {
 /**
  * Check if the identity has been initialized in the chaincode.
  */
+export async function SignIn(user: string) {
+    await FabricAdapter.useUser(user);
+    UserControllerBackEnd = UserControllerBackEnd.$withUser(user);
+    FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
+}
 export async function InitServerIdentity() {
     await init;
-    const user: string = "user1";
-    await FabricAdapter.useUser(user);
-    console.log(FabricAdapter.organizations, FabricAdapter.config);
+    await SignIn("user1");
     UserControllerBackEnd = UserControllerBackEnd.$withUser("admin");
-    FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
+    // if a GENESIS User doesn't exist for Default User
+    // Create one
+    try{
+        await UserControllerBackEnd.Generate();
+    }catch(err){}
 }
 
 //#endregion

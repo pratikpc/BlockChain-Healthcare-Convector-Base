@@ -24,11 +24,11 @@ FileExpressController.post('/upload', Upload.single('file'), async (req: express
         const ext = path.extname(fileName);
 
         // TODO:- Shift to Recipient ID
-        const recipient = ["1"];
+        const recipient = [id];
         // TODO:- Shift to Current User ID
-        const uploader = ["1"];
+        const uploader = [id];
         // TODO:- Shift to Viewer ID
-        const viewer = ["1"];
+        const viewer = [id];
 
         await FileControllerBackEnd.Create(id, ipfs, hash, ext, recipient, uploader, viewer);
         await File.Delete(fileName);
@@ -46,8 +46,6 @@ FileExpressController.post('/comment', async (req: express.Request, res: express
     const id = String(params.id).trim();
     const comment = String(params.comment).trim();
     const description = String(params.description).trim();
-    // TODO:- Shift to Current User ID
-    const creatorId = "1";
 
     if (id === "" || comment === "" || description === "")
         return res.sendStatus(404);
@@ -72,7 +70,7 @@ FileExpressController.get('/:id/comments', async (req: express.Request, res: exp
 });
 
 FileExpressController.get('/:id', async (req: express.Request, res: express.Response) => {
-    let { id } = req.params;
+    const id = String(req.params.id).trim();
     try {
         const file = await FileControllerBackEnd.GetDownloadLink(id);
 

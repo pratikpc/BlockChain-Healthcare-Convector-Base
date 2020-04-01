@@ -6,7 +6,8 @@ import {
   Invokable,
   Param,
 } from '@worldsibu/convector-core';
-import { User } from './user.model';
+import { User, DefaultUserName } from './user.model';
+import * as Utils from "./utils";
 
 @Controller('user')
 export class UserController extends ConvectorController<ChaincodeTx> {
@@ -15,13 +16,22 @@ export class UserController extends ConvectorController<ChaincodeTx> {
     const identity = this.tx.identity;
 
     const name = identity.getAttributeValue('name') || "Name";
+    const id = identity.getAttributeValue('id') || DefaultUserName;
     const typeUser = identity.getAttributeValue('typeUser') || "TypeUser";
+    const existing = await User.getOne(id);
+    if (existing != null && existing.id != null)
+      return null;
 
     const user = new User({
-      id: identity.getID(),
+      id: id,
       Name: name,
       Created: this.tx.stub.getTxDate(),
-      TypeUser: typeUser
+      TypeUser: typeUser,
+      MSPId: this.tx.identity.getMSPID(),
+      Identities: [{
+        Status: true,
+        Fingerprint: this.sender
+      }]
     });
     await user.save();
     return user;
@@ -37,13 +47,30 @@ export class UserController extends ConvectorController<ChaincodeTx> {
       return null;
     return user;
   }
+  @Invokable()
+  public async GetByName(
+    @Param(yup.string())
+    name: string
+  ) {
+    const users = Utils.ToArray(await User.query(User, {
+      selector: {
+        "Name": name
+      }
+    }));
+    if (users.length === 0)
+      return null;
+    const user = users[0];
+    if (user == null || user.id == null)
+      return null;
+    return user;
+  }
 
   @Invokable()
   public async GetTypeOfUser(
     @Param(yup.string())
     id: string
   ) {
-    let user = await User.getOne(id);
+    const user = await User.getOne(id);
     if (user == null || user.id == null)
       return "";
     return user.TypeUser;

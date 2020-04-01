@@ -34,7 +34,7 @@ async function AppSetup() {
   app.use('/user', UserExpressController);
 
   app.use("/", (req: express.Request, res: express.Response) => {
-    return res.send("Please GO to /file and /user");
+    return res.render("index.hbs");
   });
 
   await InitServerIdentity();
