@@ -37,42 +37,52 @@ export class UserController extends ConvectorController<ChaincodeTx> {
     return user;
   }
 
+  private async PrivGetFromId(id: string) {
+    const user = await User.getOne(id);
+    if (user == null || user.id == null)
+      throw new Error("User: ID Not Found");
+    return user;
+  }
   @Invokable()
   public async Get(
     @Param(yup.string())
     id: string
   ) {
-    const user = await User.getOne(id);
-    if (user == null || user.id == null)
-      return null;
-    return user;
+    return await this.PrivGetFromId(id);
   }
-  @Invokable()
-  public async GetByName(
-    @Param(yup.string())
-    name: string
-  ) {
+  private async PrivGetUserFromName(name: string) {
     const users = Utils.ToArray(await User.query(User, {
       selector: {
         "Name": name
       }
     }));
     if (users.length === 0)
-      return null;
+      throw new Error("User: Name Not Found");
     const user = users[0];
-    if (user == null || user.id == null)
-      return null;
     return user;
-  }
 
+  }
+  @Invokable()
+  public async GetFromName(
+    @Param(yup.string())
+    name: string
+  ) {
+    return this.PrivGetUserFromName(name);
+  }
+  @Invokable()
+  public async GetIDFromName(
+    @Param(yup.string())
+    name: string
+  ) {
+    const user = await this.PrivGetUserFromName(name);
+    return user.id;
+  }
   @Invokable()
   public async GetTypeOfUser(
     @Param(yup.string())
     id: string
   ) {
-    const user = await User.getOne(id);
-    if (user == null || user.id == null)
-      return "";
+    const user = await this.PrivGetFromId(id);
     return user.TypeUser;
   }
 
