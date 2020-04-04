@@ -43,6 +43,18 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     return file;
   }
 
+  private async PrivGetUserIDsFromNames(names: Array<String>) {
+    const users_raw = Utils.ToArray(await User.query(User, {
+      selector: {
+        Name: {
+          $in: names
+        }
+      }
+    }));
+    const user_ids = users_raw.map(user_raw => user_raw.id);
+    return user_ids;
+  }
+
   @Invokable()
   public async Create(
     @Param(yup.string())
@@ -75,6 +87,10 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (existing != null && existing.id != null)
       throw new Error("File Contract. File Already Exists");
 
+    uploader = await this.PrivGetUserIDsFromNames(uploader);
+    viewer = await this.PrivGetUserIDsFromNames(viewer);
+    recipient = await this.PrivGetUserIDsFromNames(recipient);
+    
     const file = new File({
       id: id,
       created: this.tx.stub.getTxDate(),
@@ -95,7 +111,11 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     return file;
   }
 
-  private async CheckUserClaim(userId: string) {
+  private async PrivCheckUserClaim(userList: Array<String>, userId: string) {
+    // Verify if User by Given ID is present in the Lists
+    if (!userList.includes(userId))
+      return false;
+
     // Verify if the User is Who s/he claims to be
     const user = await User.getOne(userId);
     if (user == null || user.MSPId !== this.tx.identity.getMSPID())
@@ -108,24 +128,20 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     return true;
   }
 
-  private async UserHasAccess(file: File, userId: string) {
+  private async PrivUserHasViewAccess(file: File, userId: string) {
     // Verify if User by Given ID is present in the Lists
     if (!(file.Uploader.includes(userId) || file.Viewer.includes(userId) || file.Recipient.includes(userId)))
       return false;
-
-    return await this.CheckUserClaim(userId);
+    const users = [...file.Uploader, ...file.Viewer, ...file.Recipient];
+    return await this.PrivCheckUserClaim(users, userId);
   }
 
-  private async UserIsRecipient(file: File, userId: string) {
-    // Verify if User by Given ID is present in the Lists
-    if (!file.Recipient.includes(userId))
-      return false;
-
-      return await this.CheckUserClaim(userId);
-    }
+  private async PrivUserIsRecipient(file: File, userId: string) {
+    return await this.PrivCheckUserClaim(file.Recipient, userId);
+  }
 
   @Invokable()
-  public async AddDescriptionToFile(
+  public async AddCommentToFile(
     @Param(yup.string())
     id: string,
     @Param(yup.string())
@@ -146,7 +162,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
 
     const creatorId = this.tx.identity.getAttributeValue("id") || DefaultUserName;
 
-    if (! await this.UserHasAccess(file, creatorId))
+    if (! await this.PrivUserHasViewAccess(file, creatorId))
       throw new Error("This User is Not allowed to Insert any values");
 
     const file_comment = new FileComment({
@@ -160,7 +176,18 @@ export class FileController extends ConvectorController<ChaincodeTx> {
 
     await file_private.save({ privateCollection: this.FilePrivateStorage });
   }
-
+  @Invokable()
+  public async GetViewerToFile(
+    @Param(yup.string())
+    id: string) {
+    const file = await File.getOne(id);
+    if (file == null || file.id == null) {
+      throw new Error("File Contract. Unable to Find. ID Does Not Exist on File");
+    }
+    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+      throw new Error("File Contract. This User is Not allowed to Access");
+    return file.Viewer;
+  }
   @Invokable()
   public async AddViewerToFile(
     @Param(yup.string())
@@ -172,28 +199,11 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.UserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
       throw new Error("This User is Not allowed to Insert any values");
     file.Viewer.push(viewer);
     await file.save();
   }
-  @Invokable()
-  public async AddUploaderToFile(
-    @Param(yup.string())
-    id: string,
-    @Param(yup.string())
-    uploader: string
-  ) {
-    const file = await File.getOne(id);
-    if (file == null || file.id == null) {
-      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
-    }
-    if (! await this.UserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
-      throw new Error("This User is Not allowed to Insert any values");
-    file.Uploader.push(uploader);
-    await file.save();
-  }
-
   @Invokable()
   public async RemoveViewerFromFile(
     @Param(yup.string())
@@ -205,10 +215,39 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.UserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
       throw new Error("This User is Not allowed to Insert any values");
     file.Viewer = file.Viewer.filter(d => d !== viewer);
     await file.save();
+  }
+
+  @Invokable()
+  public async AddUploaderToFile(
+    @Param(yup.string())
+    id: string,
+    @Param(yup.string())
+    uploader: string
+  ) {
+    const file = await File.getOne(id);
+    if (file == null || file.id == null) {
+      throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
+    }
+    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+      throw new Error("This User is Not allowed to Insert any values");
+    file.Uploader.push(uploader);
+    await file.save();
+  }
+  @Invokable()
+  public async GetUploadToFile(
+    @Param(yup.string())
+    id: string) {
+    const file = await File.getOne(id);
+    if (file == null || file.id == null) {
+      throw new Error("File Contract. Unable to Find. ID Does Not Exist on File");
+    }
+    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+      throw new Error("File Contract. This User is Not allowed to Access");
+    return file.Uploader;
   }
   @Invokable()
   public async RemoveUploaderFromFile(
@@ -221,7 +260,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.UserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
       throw new Error("This User is Not allowed to Insert any values");
     file.Uploader = file.Uploader.filter(c => c !== uploader);
     await file.save();
@@ -232,7 +271,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     @Param(yup.string())
     id: string) {
     const file = await File.getOne(id, File);
-    if (! await this.UserHasAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserHasViewAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
       throw new Error("This User is Not allowed to Insert any values");
     return file;
   }
@@ -244,7 +283,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.UserHasAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserHasViewAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
       throw new Error("This User is Not allowed to Insert any values");
 
     return await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
@@ -258,7 +297,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
     const userId = this.tx.identity.getAttributeValue("id") || DefaultUserName;
-    if (! await this.UserHasAccess(file, userId))
+    if (! await this.PrivUserHasViewAccess(file, userId))
       throw new Error("This User is Not allowed to Download Files");
 
     const file_priv = (await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage }));
@@ -267,26 +306,28 @@ export class FileController extends ConvectorController<ChaincodeTx> {
 
     return { IPFS: file_priv.IPFS, extension: file_priv.extension };
   }
-
-  @Invokable()
-  public async GetComments(
-    @Param(yup.string())
-    id: string) {
+  private async PrivGetAllComments(id: string) {
     const file = await File.getOne(id);
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.UserHasAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserHasViewAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
       throw new Error("This User is Not allowed to Insert any values");
 
     const file_priv = await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
     if (file_priv == null || file_priv.id == null)
       throw new Error("File Contract File Not Found");
-    const comments_model = file_priv.Comments;
+    return file_priv.Comments;
+  }
+
+  @Invokable()
+  public async GetComments(
+    @Param(yup.string())
+    id: string) {
+    const comments_model = await this.PrivGetAllComments(id);
     const comments = comments_model.map((comment_model => comment_model as FileComment));
     return comments;
   }
-
 
   // Only for Debugging
   @Invokable()
@@ -307,33 +348,47 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     });
     return Utils.ToArray(files);
   }
-
-  @Invokable()
-  public async GetFilesByIdFromUser(
-    @Param(yup.string())
-    id: string
-  ) {
-    const query_result = await File.query(File, {
+  private async PrivGetFilesById(id: string) {
+    const files = await File.query(File, {
       selector: {
         $or: [
           {
             Recipient: {
-              $elemMatch: id
+              $elemMatch: {
+                $eq: id
+              }
             }
           },
           {
             Viewer: {
-              $elemMatch: id
+              $elemMatch: {
+                $eq: id
+              }
             }
           },
           {
             Uploader: {
-              $elemMatch: id
+              $elemMatch: {
+                $eq: id
+              }
             }
           }
         ]
       }
     });
-    return Utils.ToArray(query_result);
+    return Utils.ToArray(files);
+  }
+
+  @Invokable()
+  public async GetFilesById(
+    @Param(yup.string())
+    id: string
+  ) {
+    return await this.PrivGetFilesById(id);
+  }
+  @Invokable()
+  public async GetFilesForCurrentUser() {
+    const userId = this.tx.identity.getAttributeValue("id") || DefaultUserName;
+    return await this.PrivGetFilesById(userId);
   }
 }
