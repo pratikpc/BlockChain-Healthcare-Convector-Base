@@ -19,14 +19,19 @@ const init = FabricAdapter.init();
 export let UserControllerBackEnd = ClientFactory(UserController, FabricAdapter);
 export let FileControllerBackEnd = ClientFactory(FileController, FabricAdapter);
 
-const contextPath = join(keyStore + '/' + identityName);
-fs.readFile(contextPath, 'utf8', (err) => {
-    if (err) {
-        throw new Error(`Context in ${contextPath} doesn't exist. Make sure that path resolves to your key stores folder`);
-    } else {
-        console.log('Context path with cryptographic materials exists');
+function CheckIfCryptoMaterialExists() {
+    const contextPath = join(keyStore + '/' + identityName);
+    try {
+        const exists = fs.existsSync(contextPath);
+        if (exists) {
+            console.log('Context path with cryptographic materials exists');
+            return;
+        }
+    } catch (err) {
     }
-});
+    throw new Error(`Context in ${contextPath} doesn't exist. Make sure that path resolves to your key stores folder`);
+}
+
 
 //#region Optional
 
@@ -44,14 +49,18 @@ export async function SignOut(user: string = "user1") {
     FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
 }
 export async function InitServerIdentity() {
+    await CheckIfCryptoMaterialExists();
+
     await init;
+
     await SignIn("user1");
     UserControllerBackEnd = UserControllerBackEnd.$withUser("admin");
+
     // if a GENESIS User doesn't exist for Default User
     // Create one
-    try{
+    try {
         await UserControllerBackEnd.Generate();
-    }catch(err){}
+    } catch (err) { }
 }
 
 //#endregion
