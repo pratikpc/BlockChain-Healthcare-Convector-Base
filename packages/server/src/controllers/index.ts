@@ -1,2 +1,2 @@
-export { UserExpressController } from './user.controller';
-export { FileExpressController } from './file.controller';
+export { UserExpressController } from './user.express';
+export { FileExpressController } from './file.express';
