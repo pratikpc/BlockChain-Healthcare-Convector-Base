@@ -25,17 +25,17 @@ async function AppSetup() {
   app.use(cookieParser());
   app.use(cors());
 
-  app.set('views', path.join(__dirname, '/../views/'));
-  app.use(express.static(path.join(__dirname, "/../static/")));
-  app.engine('hbs', expressHandlebars({extname: "hbs"}));
-  app.set('view engine', 'hbs');
+  // app.set('views', path.join(__dirname, '/../views/'));
+  // app.use(express.static(path.join(__dirname, "/../static/")));
+  // app.engine('hbs', expressHandlebars({extname: "hbs"}));
+  // app.set('view engine', 'hbs');
 
   app.use('/file', FileExpressController);
   app.use('/user', UserExpressController);
 
-  app.use("/", (req: express.Request, res: express.Response) => {
-    return res.render("index.hbs");
-  });
+  // app.use("/", (req: express.Request, res: express.Response) => {
+  //   return res.render("index.hbs");
+  // });
 
   await InitServerIdentity();
 
