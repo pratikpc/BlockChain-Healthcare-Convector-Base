@@ -38,6 +38,11 @@ export async function SignIn(user: string) {
     UserControllerBackEnd = UserControllerBackEnd.$withUser(user);
     FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
 }
+export async function SignOut(user: string = "user1") {
+    await FabricAdapter.useUser(user);
+    UserControllerBackEnd = UserControllerBackEnd.$withUser(user);
+    FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
+}
 export async function InitServerIdentity() {
     await init;
     await SignIn("user1");
