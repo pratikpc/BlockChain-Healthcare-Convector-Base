@@ -41,14 +41,14 @@ FileExpressController.post('/create', Upload.array('file'), async (req: express.
     return res.status(500).json(false);
 });
 
-FileExpressController.post('/comment', async (req: express.Request, res: express.Response) => {
+FileExpressController.post('/:id/comment', async (req: express.Request, res: express.Response) => {
     const params = req.body;
 
     if (params == null)
         return res.sendStatus(404);
 
     try {
-        const id = String(params.id).trim();
+        const id = String(req.params.id).trim();
         const comment = String(params.comment).trim();
         const description = String(params.description).trim();
 
