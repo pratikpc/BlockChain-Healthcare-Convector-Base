@@ -170,6 +170,36 @@ FileExpressController.post('/:id/upload', async (req: express.Request, res: expr
     }
     return res.sendStatus(404);
 });
+FileExpressController.delete('/:id/viewer/:user', async (req: express.Request, res: express.Response) => {
+    const id = String(req.params.id).trim();
+    const user = String(req.body.user).trim();
+
+    if (id === "" || user === "")
+        return res.sendStatus(500);
+
+    try {
+        await FileControllerBackEnd.RemoveViewerFromFile(id, user);
+        return res.sendStatus(200);
+    } catch (err) {
+        console.error(err);
+    }
+    return res.sendStatus(404);
+});
+FileExpressController.delete('/:id/upload/:user', async (req: express.Request, res: express.Response) => {
+    const id = String(req.params.id).trim();
+    const user = String(req.body.user).trim();
+
+    if (id === "" || user === "")
+        return res.sendStatus(500);
+
+    try {
+        await FileControllerBackEnd.RemoveUploaderFromFile(id, user);
+        return res.sendStatus(200);
+    } catch (err) {
+        console.error(err);
+    }
+    return res.sendStatus(404);
+});
 
 FileExpressController.get('/:id', async (req: express.Request, res: express.Response) => {
     const id = String(req.params.id).trim();
