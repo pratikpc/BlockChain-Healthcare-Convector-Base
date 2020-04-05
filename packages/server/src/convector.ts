@@ -3,8 +3,8 @@ import { keyStore, identityName, channel, chaincode, networkProfile, identityOrg
 import * as fs from 'fs';
 import { FabricControllerAdapter } from '@worldsibu/convector-adapter-fabric';
 import { ClientFactory } from '@worldsibu/convector-core';
-
 import { UserController, FileController } from 'file-cc';
+import * as Utils from "./utils";
 
 export const FabricAdapter = new FabricControllerAdapter({
     txTimeout: 300000,
@@ -49,8 +49,8 @@ export async function SignOut(user: string = "user1") {
     FileControllerBackEnd = FileControllerBackEnd.$withUser(user);
 }
 export async function InitServerIdentity() {
-    await CheckIfCryptoMaterialExists();
-
+    CheckIfCryptoMaterialExists();
+    await Utils.Auth.SetUp();
     await init;
 
     await SignIn("user1");

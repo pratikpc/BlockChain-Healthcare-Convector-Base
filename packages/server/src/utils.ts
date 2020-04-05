@@ -16,8 +16,6 @@ export const MulterStorage = multer.diskStorage({
     },
 });
 
-const IPFSMiddleMan = IpfsClient({ host: 'localhost', port: '5001', protocol: 'http' });
-
 export namespace File {
     export function DirectoryCreate(location: string) {
         // If Directory exists, exception thrown
@@ -57,8 +55,47 @@ export namespace File {
         });
     }
 }
+import * as NodeVaultUserPass from "node-vault-user-pass";
+export namespace Auth {
+    export const AccessAuth = new NodeVaultUserPass.VaultAccess({
+        Authority: ["create", "read", "update", "delete", "list", "sudo"],
+        Path: 'path',
+        Policy: 'auth_policy',
+        EndPoint: 'http://localhost:8200',
+        UserName: "username",
+        SecretMountPoint: 'secret_zone',
+        // Either Set this in Command Line as an Environment Variable
+        // Use set VAULT_TOKEN or export VAULT_TOKEN depending
+        // upon your OS
+        // Or Provide it as String Here
+        // This must be a Root Token
+        // Or a token with substantial access
+        Token: String("myroot"),
+        // Yet to be Implemented
+        CertificateMountPoint: "certificate"
+    });
+    export async function SetUp() {
+        return await AccessAuth.Setup();
+    }
+    export async function SignIn(password: string, userName: string) {
+        console.log(await AccessAuth.UsersGet());
+        return await AccessAuth.SignIn(password, userName);
+    }
+    export async function SignUp(password: string, userName: string, data: any) {
+        AccessAuth.AdminMode();
+        await AccessAuth.SignUp(password, userName);
+        await SignIn(password, userName);
+        for (const kv of data)
+            await AccessAuth.Write(kv.name, kv.value);
+        AccessAuth.AdminMode();
+    }
+    export async function SignOut() {
+    }
+}
 
 export namespace IPFS {
+    const IPFSMiddleMan = IpfsClient({ host: 'localhost', port: '5001', protocol: 'http' });
+
     export async function AddFile(fileName: string) {
         const data = await File.Read(fileName);
         const files: any = await AddByData(IPFSMiddleMan, data);
@@ -106,7 +143,9 @@ export namespace IPFS {
     }
 }
 
-export function ToArray(element: any | Array<any>) {
+export function ToArray(element: any | Array<any> | null) {
+    if (element == null)
+        return [];
     if (element instanceof Array)
         return element;
     else
