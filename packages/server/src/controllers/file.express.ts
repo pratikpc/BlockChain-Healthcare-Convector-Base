@@ -4,22 +4,20 @@ import { MulterStorage, File, IPFS, } from "../utils"
 import * as multer from "multer";
 import * as uuid from "uuid";
 import * as path from "path";
+import * as Utils from "../utils";
 
 export const FileExpressController = express.Router();
-async function AddFileToBlockchain(fileName: string) {
+async function AddFileToBlockchain(fileName: string, recipient: string[]) {
     // In Future, this ID must be Linked with DB
     const id = uuid();
     const ipfs = await IPFS.AddFile(fileName);
     const hash = await File.GetSHA256(fileName);
     const ext = path.extname(fileName);
 
-    const userId = "Name";
-    // TODO:- Shift to Recipient ID
-    const recipient = [userId];
     // TODO:- Shift to Current User ID
-    const uploader = [userId];
+    const uploader: string[] = [];
     // TODO:- Shift to Viewer ID
-    const viewer = [userId];
+    const viewer: string[] = [];
 
     await FileControllerBackEnd.Create(id, ipfs, hash, ext, recipient, uploader, viewer);
     await File.Delete(fileName);
@@ -29,16 +27,22 @@ const Upload = multer({ storage: MulterStorage });
 // Upload File
 FileExpressController.post('/create', Upload.array('file'), async (req: express.Request, res: express.Response) => {
     try {
-        const file_adder_promise: Array<Promise<void>> = [];
         const files = req.files as Express.Multer.File[];
+        if (files.length === 0 || req.body == null)
+            throw new Error("Params Not Provided");
+        const recipients = Utils.ToArray(req.body.recipientId);
+        if (recipients.length === 0)
+            throw new Error("Recipient Not Provided");
+
+        const file_adder_promise: Array<Promise<void>> = [];
         for (const file of files)
-            file_adder_promise.push(AddFileToBlockchain(file.path));
+            file_adder_promise.push(AddFileToBlockchain(file.path, recipients));
         await Promise.all(file_adder_promise);
-        return res.status(200).json(true);
+        return res.sendStatus(200);
     } catch (err) {
         console.error(err);
     }
-    return res.status(500).json(false);
+    return res.sendStatus(500);
 });
 
 FileExpressController.post('/:id/comment', async (req: express.Request, res: express.Response) => {
@@ -56,6 +60,7 @@ FileExpressController.post('/:id/comment', async (req: express.Request, res: exp
         if (id === "" || comment === "" || description === "")
             return res.sendStatus(404);
 
+        await FileControllerBackEnd.AddComment(id, commentId, comment, description);
         return res.status(200).json({ id: id, comment: comment, description: description });
     } catch (err) {
         console.error(err);

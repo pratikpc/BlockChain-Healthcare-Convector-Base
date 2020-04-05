@@ -33,7 +33,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
       id: id,
       Recipient: [],
       Viewer: [],
-      Uploader: [this.tx.identity.getAttributeValue("id") || DefaultUserName]
+      Uploader: [this.GetCurrentUserId()]
     });
     await file.save();
 
@@ -79,9 +79,6 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     viewer: Array<String>
   ) {
 
-    if (uploader.length === 0 && viewer.length === 0)
-      throw new Error("File Contract. Viewer or Uploader needed to create every file");
-
     if (recipient.length === 0)
       throw new Error("File Contract. No Recipient Assigned");
 
@@ -93,16 +90,17 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (existing != null && existing.id != null)
       throw new Error("File Contract. File Already Exists");
 
-    uploader = await this.PrivGetUserIDsFromNames(uploader);
-    viewer = await this.PrivGetUserIDsFromNames(viewer);
-    recipient = await this.PrivGetUserIDsFromNames(recipient);
-    
+    // uploader = await this.PrivGetUserIDsFromNames(uploader);
+    // viewer = await this.PrivGetUserIDsFromNames(viewer);
+    // recipient = await this.PrivGetUserIDsFromNames(recipient);
+
     const file = new File({
       id: id,
       created: this.tx.stub.getTxDate(),
       Recipient: recipient,
       Viewer: viewer,
-      Uploader: [...uploader, this.tx.identity.getAttributeValue("id") || DefaultUserName]
+      // Set Current User as Default Uploader As Well
+      Uploader: [...uploader, this.GetCurrentUserId()]
     });
     await file.save();
     const file_private = new FilePrivateDetails({
@@ -135,9 +133,6 @@ export class FileController extends ConvectorController<ChaincodeTx> {
   }
 
   private async PrivUserHasViewAccess(file: File, userId: string) {
-    // Verify if User by Given ID is present in the Lists
-    if (!(file.Uploader.includes(userId) || file.Viewer.includes(userId) || file.Recipient.includes(userId)))
-      return false;
     const users = [...file.Uploader, ...file.Viewer, ...file.Recipient];
     return await this.PrivCheckUserClaim(users, userId);
   }
