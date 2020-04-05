@@ -15,6 +15,11 @@ export class FileComment extends ConvectorModel<FileComment> {
 
   @ReadOnly()
   @Required()
+  @Validate(yup.string())
+  public CommentId!: string;
+
+  @ReadOnly()
+  @Required()
   @Validate(yup.date())
   public DateAdded!: Date;
 

@@ -49,13 +49,13 @@ FileExpressController.post('/:id/comment', async (req: express.Request, res: exp
 
     try {
         const id = String(req.params.id).trim();
+        const commentId = uuid();
         const comment = String(params.comment).trim();
         const description = String(params.description).trim();
 
         if (id === "" || comment === "" || description === "")
             return res.sendStatus(404);
 
-        await FileControllerBackEnd.AddCommentToFile(id, comment, description);
         return res.status(200).json({ id: id, comment: comment, description: description });
     } catch (err) {
         console.error(err);
@@ -90,8 +90,8 @@ FileExpressController.get('/:id/comments/:commentId', async (req: express.Reques
         return res.sendStatus(404);
 
     try {
-        const comments = await FileControllerBackEnd.GetComments(id);
-        return res.json(comments);
+        const comment = await FileControllerBackEnd.GetCommentById(id, commentId);
+        return res.json(comment);
     } catch (err) {
         console.error(err);
     }

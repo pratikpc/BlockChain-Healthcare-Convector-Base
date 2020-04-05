@@ -323,10 +323,21 @@ export class FileController extends ConvectorController<ChaincodeTx> {
   @Invokable()
   public async GetComments(
     @Param(yup.string())
-    id: string) {
-    const comments_model = await this.PrivGetAllComments(id);
-    const comments = comments_model.map((comment_model => comment_model as FileComment));
+    fileId: string) {
+    const comments_raw = await this.PrivGetAllComments(fileId);
+    const comments = comments_raw.map((comment_model => comment_model as FileComment));
     return comments;
+  }
+  @Invokable()
+  public async GetCommentById(
+    @Param(yup.string())
+    fileId: string,
+    @Param(yup.string())
+    id: string) {
+    const comments_raw = await this.PrivGetAllComments(fileId);
+    const comment_raw = comments_raw.filter(comment_raw => comment_raw.CommentId === id)[0];
+    const comment = comment_raw as FileComment;
+    return comment;
   }
 
   // Only for Debugging
