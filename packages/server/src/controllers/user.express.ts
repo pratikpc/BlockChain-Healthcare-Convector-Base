@@ -10,7 +10,9 @@ export const UserExpressController = Router();
 
 UserExpressController.post("/create", async (req: Request, res: Response) => {
     try {
+        const body = req.body;
 
+        if (body == null || body.name == null || body.password == null || body.typeUser == null)
             return res.sendStatus(500);
 
         // Let it be uuid for now
@@ -38,6 +40,7 @@ UserExpressController.post("/create", async (req: Request, res: Response) => {
 });
 
 UserExpressController.post('/signIn', async (req: Request, res: Response) => {
+    const body = req.body;
 
     if (body == null || body.name == null || body.password == null)
         return res.sendStatus(500);
@@ -96,7 +99,17 @@ UserExpressController.post('/signOut', async (req: Request, res: Response) => {
 
 UserExpressController.get('/', async (req: Request, res: Response) => {
     try {
+        console.log("333");
         const users = await UserControllerBackEnd.GetAll();
+        return res.json(users);
+    } catch (err) {
+        console.error(err);
+    }
+    return res.sendStatus(404);
+});
+UserExpressController.get('/current', async (req: Request, res: Response) => {
+    try {
+        const users = await UserControllerBackEnd.GetCurrentUser();
         return res.json(users);
     } catch (err) {
         console.error(err);

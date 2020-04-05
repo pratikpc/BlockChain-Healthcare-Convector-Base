@@ -78,6 +78,11 @@ export class UserController extends ConvectorController<ChaincodeTx> {
     return user.id;
   }
   @Invokable()
+  public async GetCurrentUser() {
+    const user = await User.getOne(this.tx.identity.getAttributeValue("id") || DefaultUserName);
+    return {id: user.id, Name: user.Name, MSPid: user.MSPId};
+  }
+  @Invokable()
   public async GetTypeOfUser(
     @Param(yup.string())
     id: string
@@ -86,9 +91,15 @@ export class UserController extends ConvectorController<ChaincodeTx> {
     return user.TypeUser;
   }
 
-
   @Invokable()
   public async GetAll() {
-    return await User.getAll();
+    const users_raw = await User.getAll();
+    const users = users_raw.map((user_raw) => {
+      return {
+        id: user_raw.id,
+        Name: user_raw.Name
+      }
+    });
+    return users;
   }
 }
