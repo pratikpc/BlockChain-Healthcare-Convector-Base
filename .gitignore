@@ -3,3 +3,4 @@ chaincode-*/
 dist/
 *lerna*
 packages/server/uploads/
+package-lock.json
