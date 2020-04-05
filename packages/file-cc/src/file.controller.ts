@@ -15,6 +15,12 @@ import { User, DefaultUserName } from './user.model';
 export class FileController extends ConvectorController<ChaincodeTx> {
 
   private readonly FilePrivateStorage = "collectionfileprivatestorage";
+
+
+  private GetCurrentUserId(defaultUserName = DefaultUserName) {
+    return this.tx.identity.getAttributeValue("id") || defaultUserName;
+  }
+
   @Invokable()
   public async Initial() {
 
@@ -141,7 +147,9 @@ export class FileController extends ConvectorController<ChaincodeTx> {
   }
 
   @Invokable()
-  public async AddCommentToFile(
+  public async AddComment(
+    @Param(yup.string())
+    fileId: string,
     @Param(yup.string())
     id: string,
     @Param(yup.string())
@@ -149,23 +157,24 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     @Param(yup.string())
     Description: string) {
 
-    const file_private = await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
+    const file_private = await FilePrivateDetails.getOne(fileId, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
 
     // Check if Does not Exist
     if (file_private == null || file_private.id == null)
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File Private");
 
-    const file = await File.getOne(id, File);
+    const file = await File.getOne(fileId, File);
     // Check if Already Exists
     if (file == null || file.id == null)
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
 
-    const creatorId = this.tx.identity.getAttributeValue("id") || DefaultUserName;
+    const creatorId = this.GetCurrentUserId();
 
     if (! await this.PrivUserHasViewAccess(file, creatorId))
       throw new Error("This User is Not allowed to Insert any values");
 
     const file_comment = new FileComment({
+      id: id,
       DateAdded: this.tx.stub.getTxDate(),
       Comment: Comment,
       Description: Description,
@@ -184,7 +193,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Find. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.GetCurrentUserId()))
       throw new Error("File Contract. This User is Not allowed to Access");
     return file.Viewer;
   }
@@ -199,7 +208,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
     file.Viewer.push(viewer);
     await file.save();
@@ -215,7 +224,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
     file.Viewer = file.Viewer.filter(d => d !== viewer);
     await file.save();
@@ -232,7 +241,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
     file.Uploader.push(uploader);
     await file.save();
@@ -245,7 +254,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Find. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.GetCurrentUserId()))
       throw new Error("File Contract. This User is Not allowed to Access");
     return file.Uploader;
   }
@@ -260,7 +269,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserIsRecipient(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserIsRecipient(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
     file.Uploader = file.Uploader.filter(c => c !== uploader);
     await file.save();
@@ -271,7 +280,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     @Param(yup.string())
     id: string) {
     const file = await File.getOne(id, File);
-    if (! await this.PrivUserHasViewAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserHasViewAccess(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
     return file;
   }
@@ -283,7 +292,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserHasViewAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserHasViewAccess(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
 
     return await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
@@ -296,7 +305,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    const userId = this.tx.identity.getAttributeValue("id") || DefaultUserName;
+    const userId = this.GetCurrentUserId();
     if (! await this.PrivUserHasViewAccess(file, userId))
       throw new Error("This User is Not allowed to Download Files");
 
@@ -311,7 +320,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
     if (file == null || file.id == null) {
       throw new Error("File Contract. Unable to Add Description. ID Does Not Exist on File");
     }
-    if (! await this.PrivUserHasViewAccess(file, this.tx.identity.getAttributeValue("id") || DefaultUserName))
+    if (! await this.PrivUserHasViewAccess(file, this.GetCurrentUserId()))
       throw new Error("This User is Not allowed to Insert any values");
 
     const file_priv = await FilePrivateDetails.getOne(id, FilePrivateDetails, { privateCollection: this.FilePrivateStorage });
@@ -399,7 +408,7 @@ export class FileController extends ConvectorController<ChaincodeTx> {
   }
   @Invokable()
   public async GetFilesForCurrentUser() {
-    const userId = this.tx.identity.getAttributeValue("id") || DefaultUserName;
+    const userId = this.GetCurrentUserId();
     return await this.PrivGetFilesById(userId);
   }
 }
